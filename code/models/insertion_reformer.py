@@ -48,7 +48,7 @@ class InsertionReformer(pl.LightningModule):
     # Tells PyTorch Lightning how to do inference
     def forward(self, x):
         output = self.shared_forward(x)
-        return torch.sigmoid(output)
+        return output
 
     # Tells PyTorch Lightning how to do a training step
     def training_step(self, batch, batch_idx):
