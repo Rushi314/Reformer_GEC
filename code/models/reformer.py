@@ -1,18 +1,17 @@
 import torch
+from transformers import ReformerModel, ReformerConfig, ReformerTokenizer
 
-# This is the tokenizer; its taken from https://huggingface.co/google/reformer-enwik8
-def encode(list_of_strings, pad_token_id=0):
-    max_length = max([len(string) for string in list_of_strings])
+# Just a few reformer utils
 
-    attention_masks = torch.zeros((len(list_of_strings), max_length), dtype=torch.long)
-    input_ids = torch.full((len(list_of_strings), max_length), pad_token_id, dtype=torch.long)
+def pretrained_reformer():
+    # We load the pre-trained Reformer's config first because we need to make changes to it
+    # https://stackoverflow.com/questions/68742863/error-while-trying-to-fine-tune-the-reformermodelwithlmhead-google-reformer-enw#answer-68885046
+    config = ReformerConfig.from_pretrained('google/reformer-enwik8')
+    config.is_decoder = False  # change masked self-attention to normal self-attention
+    config.num_hashes = 2  # was 4; lowering to 2 reduces memory at expense of accuracy (we can raise it back later)
+    config.axial_pos_embds = False  # replace axial position embeddings with new learned embeddings
+                                    # this avoids an issue where all inputs needed to be padded to size 65536
 
-    for idx, string in enumerate(list_of_strings):
-        if not isinstance(string, bytes):
-            string = str.encode(string)
+    reformer = ReformerModel.from_pretrained('google/reformer-enwik8', config=config)
 
-        input_ids[idx, :len(string)] = torch.tensor([x + 2 for x in string])
-        attention_masks[idx, :len(string)] = 1
-        
-    return input_ids, attention_masks
-
+    return reformer

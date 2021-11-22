@@ -4,23 +4,14 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from code.models.reformer import encode
+from code.models.reformer import pretrained_reformer
 
 class DeletionReformer(pl.LightningModule):
     # Constructor; creates Reformer and linear layer
     def __init__(self):
         super().__init__()
 
-        # We load the pre-trained Reformer's config first because we need to make changes to it
-        # https://stackoverflow.com/questions/68742863/error-while-trying-to-fine-tune-the-reformermodelwithlmhead-google-reformer-enw#answer-68885046
-        config = ReformerConfig.from_pretrained('google/reformer-enwik8')
-        config.is_decoder = False  # change masked self-attention to normal self-attention
-        config.num_hashes = 2  # was 4; lowering to 2 reduces memory at expense of accuracy (we can raise it back later)
-        config.axial_pos_embds = False  # replace axial position embeddings with new learned embeddings
-                                        # this avoids an issue where all inputs needed to be padded to size 65536
-        self.reformer = ReformerModel.from_pretrained(
-            'google/reformer-enwik8', config=config)
-
+        self.reformer = pretrained_reformer()
         self.linear = nn.Linear(2048, 1)
 
     # A method I made to avoid writing the same code twice
@@ -29,8 +20,8 @@ class DeletionReformer(pl.LightningModule):
         # input_ids: sentences, except we mapped each character to an integer index
         # attention_masks: tells Reformer where the padding is (because variable length sentences)
 
-        reformer_output = self.reformer(input_ids, attention_masks)
-        output = self.linear(reformer_output['last_hidden_state'])
+        reformer_output = self.reformer(input_ids, attention_masks)['last_hidden_state']
+        output = self.linear(reformer_output)
 
         batch_size = len(input_ids)
         return output.view(batch_size, -1)
@@ -59,7 +50,7 @@ class DeletionReformer(pl.LightningModule):
         sentences = [datum[0] for datum in batch]
         labels = [datum[1] for datum in batch]
 
-        input_ids, attention_masks = encode(sentences)
+        input_ids, attention_masks = DeletionReformer.encode(sentences)
 
         padded_labels = nn.utils.rnn.pad_sequence(labels, batch_first=True)
         label_masks = nn.utils.rnn.pad_sequence([torch.ones_like(label) for label in labels], batch_first=True)
@@ -68,3 +59,19 @@ class DeletionReformer(pl.LightningModule):
         y = (padded_labels, label_masks)
 
         return (x, y)
+
+    # This is the tokenizer taken from https://huggingface.co/google/reformer-enwik8
+    def encode(list_of_strings, pad_token_id=0):
+        max_length = max([len(string) for string in list_of_strings])
+
+        attention_masks = torch.zeros((len(list_of_strings), max_length), dtype=torch.long)
+        input_ids = torch.full((len(list_of_strings), max_length), pad_token_id, dtype=torch.long)
+
+        for idx, string in enumerate(list_of_strings):
+            if not isinstance(string, bytes):
+                string = str.encode(string)
+
+            input_ids[idx, :len(string)] = torch.tensor([x + 2 for x in string])
+            attention_masks[idx, :len(string)] = 1
+
+        return input_ids, attention_masks
