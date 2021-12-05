@@ -29,7 +29,12 @@ class DeletionReformer(pl.LightningModule):
     # Tells PyTorch Lightning how to do inference
     def forward(self, x):
         output = self.shared_forward(x)
-        return torch.sigmoid(output)
+
+        # 1 if prob < 0.5, 0 if prob >= 0.5
+        deletion_mask = output < 0
+
+        # Return decoded input with characters removed
+        return DeletionReformer.decode(x[0] * deletion_mask, x[1])
 
     # Tells PyTorch Lightning how to do a training step
     def training_step(self, batch, batch_idx):
@@ -75,3 +80,10 @@ class DeletionReformer(pl.LightningModule):
             attention_masks[idx, :len(string)] = 1
 
         return input_ids, attention_masks
+
+    def decode(input_ids, attention_masks):
+        strings = []
+        string_lengths = torch.sum(attention_masks, dim=1)
+        for encoded_string, length in zip(input_ids, string_lengths):
+            strings.append("".join([chr(x - 2) if x > 1 else "" for x in encoded_string]))
+        return strings

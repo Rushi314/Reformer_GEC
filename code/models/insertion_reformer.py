@@ -2,6 +2,7 @@ import pytorch_lightning as pl
 import torch
 from torch import nn
 import torch.nn.functional as F
+from itertools import zip_longest
 
 from code.models.reformer import pretrained_reformer
 
@@ -47,8 +48,25 @@ class InsertionReformer(pl.LightningModule):
 
     # Tells PyTorch Lightning how to do inference
     def forward(self, x):
-        output = self.shared_forward(x)
-        return output
+        insertion_log_probs = self.shared_forward(x)
+        encoded_insertions = torch.argmax(insertion_log_probs, dim=2)
+
+        input_ids, attention_masks = x
+
+        strings = []
+        string_lengths = torch.sum(attention_masks, dim=1) - 2
+        for encoded_string, string_insertions, length in zip(input_ids, encoded_insertions, string_lengths):
+            string = []
+            for encoded_char, insertion in zip_longest(encoded_string[1:length + 1], string_insertions[:length + 1]):
+                if insertion != 256:
+                    # Map class directly back to character via chr()
+                    string.append(chr(insertion))
+                if encoded_char:
+                    # For some reason, the reformer was trained to offset id of each character by 2
+                    string.append(chr(encoded_char - 2))
+
+            strings.append("".join(string))
+        return strings
 
     # Tells PyTorch Lightning how to do a training step
     def training_step(self, batch, batch_idx):
@@ -80,6 +98,9 @@ class InsertionReformer(pl.LightningModule):
             for position, pos_chars in enumerate(label):
                 pos_chars = (None,) if pos_chars is None else pos_chars
                 for char in pos_chars:
+                    encoded_char = str.encode(char)
+                    assert len(encoded_char) == 1 # Makes sure the character is supported
+
                     indices.append(index)
                     positions.append(position)
                     chars.append(256 if char is None else int.from_bytes(str.encode(char), byteorder='big'))
@@ -108,3 +129,10 @@ class InsertionReformer(pl.LightningModule):
             attention_masks[idx, :len(string)+2] = 1
             
         return input_ids, attention_masks
+
+    def decode(input_ids, attention_masks):
+        strings = []
+        string_lengths = torch.sum(attention_masks, dim=1) - 2
+        for encoded_string, length in zip(input_ids, string_lengths):
+            strings.append("".join([chr(x - 2) if x > 1 and x < 258 else "" for x in encoded_string]))
+        return strings
