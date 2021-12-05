@@ -16,7 +16,7 @@ def main():
         with open(args.truth, encoding='utf-8') as gt , \
                 open(args.actual, encoding='utf-8') as og:
             for line_gt, line_og in zip(gt, og):
-                out_file.write(" ".join(get_binary(line_gt, line_og))+"\n")
+                out_file.write("".join(map(str, get_binary(line_gt, line_og)))+"\n")
             
 
 if __name__ == '__main__':
