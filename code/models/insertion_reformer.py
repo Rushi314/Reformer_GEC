@@ -98,8 +98,9 @@ class InsertionReformer(pl.LightningModule):
             for position, pos_chars in enumerate(label):
                 pos_chars = (None,) if pos_chars is None else pos_chars
                 for char in pos_chars:
-                    encoded_char = str.encode(char)
-                    assert len(encoded_char) == 1 # Makes sure the character is supported
+                    if char is not None:
+                        encoded_char = str.encode(char)
+                        assert len(encoded_char) == 1 # Makes sure the character is supported
 
                     indices.append(index)
                     positions.append(position)
