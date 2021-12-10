@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TestTubeLogger
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, TQDMProgressBar
 
 from code.models.deletion_reformer import DeletionReformer
 from code.models.insertion_reformer import InsertionReformer
@@ -33,11 +33,12 @@ def main(args):
             filename='{epoch}-{val_loss:.3f}',
             save_last=True
         ),
-        EarlyStopping(monitor='val_loss', patience=5)
+        EarlyStopping(monitor='val_loss', patience=5),
+        TQDMProgressBar()
     ]
 
-    logger = TestTubeLogger("drive/Shareddrives/CS685_Reformer_GEC/Experiments", name=model.__name__)
-    # logger = TestTubeLogger("Experiments", name=type(model).__name__)
+    logger = TestTubeLogger("drive/Shareddrives/CS685_Reformer_GEC/Experiments", name=type(model).__name__)
+    # logger = TestTubeLogger("Experiments", name=type(model).__name__) # Local experiment only
     trainer = pl.Trainer(
         callbacks=callbacks,
         logger=logger,
