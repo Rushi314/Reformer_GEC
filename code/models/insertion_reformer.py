@@ -3,6 +3,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from itertools import zip_longest
+import math
 
 from code.models.reformer import pretrained_reformer
 
@@ -74,9 +75,21 @@ class InsertionReformer(pl.LightningModule):
         log_probs = self.shared_forward(x)
 
         indices, positions, chars, weights = y
-        loss = torch.sum(log_probs[indices, positions, chars] * weights) / torch.sum(weights)
+        loss = -torch.sum(log_probs[indices, positions, chars] * weights) / torch.sum(weights)
+
+        self.log('train_loss', loss)
         
         return loss
+
+    # Tells PyTorch Lightning how to do a training step
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        log_probs = self.shared_forward(x)
+
+        indices, positions, chars, weights = y
+        loss = -torch.sum(log_probs[indices, positions, chars] * weights) / torch.sum(weights)
+        
+        self.log('val_loss', loss)
 
     # Tells PyTorch Lightning which optimizer to use
     def configure_optimizers(self):
@@ -116,6 +129,9 @@ class InsertionReformer(pl.LightningModule):
     # Modified to add start and end tokens
     def encode(list_of_strings, pad_token_id=0):
         max_length = max([len(string) for string in list_of_strings]) + 2
+
+        # ValueError: If training, sequence length 200 has to be a multiple of least common multiple chunk_length 256. Please consider padding the input to a length of 256.
+        max_length = math.ceil(max_length / 256) * 256
 
         attention_masks = torch.zeros((len(list_of_strings), max_length), dtype=torch.long)
         input_ids = torch.full((len(list_of_strings), max_length), pad_token_id, dtype=torch.long)
