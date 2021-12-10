@@ -3,6 +3,7 @@ import pytorch_lightning as pl
 import torch
 from torch import nn
 import torch.nn.functional as F
+import math
 
 from code.models.reformer import pretrained_reformer
 
@@ -45,6 +46,15 @@ class DeletionReformer(pl.LightningModule):
         loss = F.binary_cross_entropy_with_logits(preds, labels, label_masks)
         return loss
 
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        preds = self.shared_forward(x)
+
+        labels, label_masks = y
+        loss = F.binary_cross_entropy_with_logits(preds, labels, label_masks)
+        
+        self.log("val_loss", loss)
+
     # Tells PyTorch Lightning which optimizer to use
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
@@ -57,8 +67,11 @@ class DeletionReformer(pl.LightningModule):
 
         input_ids, attention_masks = DeletionReformer.encode(sentences)
 
-        padded_labels = nn.utils.rnn.pad_sequence(labels, batch_first=True)
-        label_masks = nn.utils.rnn.pad_sequence([torch.ones_like(label) for label in labels], batch_first=True)
+        # Add a dummy label so that input padding matches label padding
+        labels.append(torch.ones(input_ids.shape[1]))
+
+        padded_labels = nn.utils.rnn.pad_sequence(labels, batch_first=True)[:-1]
+        label_masks = nn.utils.rnn.pad_sequence([torch.ones_like(label) for label in labels], batch_first=True)[:-1]
 
         x = (input_ids, attention_masks)
         y = (padded_labels, label_masks)
@@ -68,6 +81,9 @@ class DeletionReformer(pl.LightningModule):
     # This is the tokenizer taken from https://huggingface.co/google/reformer-enwik8
     def encode(list_of_strings, pad_token_id=0):
         max_length = max([len(string) for string in list_of_strings])
+
+        # ValueError: If training, sequence length 200 has to be a multiple of least common multiple chunk_length 256. Please consider padding the input to a length of 256.
+        max_length = math.ceil(max_length / 256) * 256
 
         attention_masks = torch.zeros((len(list_of_strings), max_length), dtype=torch.long)
         input_ids = torch.full((len(list_of_strings), max_length), pad_token_id, dtype=torch.long)
