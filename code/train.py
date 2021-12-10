@@ -36,19 +36,19 @@ def main(args):
         EarlyStopping(monitor='val_loss', patience=5)
     ]
 
-    # logger = TestTubeLogger("drive/Shareddrives/CS685_Reformer_GEC/Experiments", name=model.__name__)
-    logger = TestTubeLogger("Experiments", name=type(model).__name__)
+    logger = TestTubeLogger("drive/Shareddrives/CS685_Reformer_GEC/Experiments", name=model.__name__)
+    # logger = TestTubeLogger("Experiments", name=type(model).__name__)
     trainer = pl.Trainer(
         callbacks=callbacks,
         logger=logger,
+        val_check_interval=0.5,
         gpus=1 if torch.cuda.is_available() else 0
     )
     trainer.fit(
         model,
         train_dataloader,
         val_dataloader,
-        ckpt_path=args.checkpoint_path,
-        val_check_interval=1.0
+        ckpt_path=args.checkpoint_path
     )
 
 if __name__ == "__main__":

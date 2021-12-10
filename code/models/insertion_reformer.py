@@ -75,7 +75,7 @@ class InsertionReformer(pl.LightningModule):
         log_probs = self.shared_forward(x)
 
         indices, positions, chars, weights = y
-        loss = torch.sum(log_probs[indices, positions, chars] * weights) / torch.sum(weights)
+        loss = -torch.sum(log_probs[indices, positions, chars] * weights) / torch.sum(weights)
 
         self.log('train_loss', loss)
         
@@ -87,7 +87,7 @@ class InsertionReformer(pl.LightningModule):
         log_probs = self.shared_forward(x)
 
         indices, positions, chars, weights = y
-        loss = torch.sum(log_probs[indices, positions, chars] * weights) / torch.sum(weights)
+        loss = -torch.sum(log_probs[indices, positions, chars] * weights) / torch.sum(weights)
         
         self.log('val_loss', loss)
 
