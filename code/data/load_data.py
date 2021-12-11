@@ -16,6 +16,9 @@ def load_del_data():
         for row in dataset_reader(name):
             x = row[1]
             y = torch.tensor(eval(row[4]), dtype=float)
+
+            assert len(x) == len(y)
+
             dataset.append((x, y))
         datasets.append(dataset)
 
@@ -26,8 +29,11 @@ def load_ins_data():
     for name in ('train', 'val'):
         dataset = []
         for row in dataset_reader(name):
-            x = row[1]
+            x = row[3]
             y = [None if len(item) == 0 else item for item in eval(row[5])]
+
+            assert len(str.encode(x)) + 1 == len(y)
+
             dataset.append((x, y))
         datasets.append(dataset)
 
