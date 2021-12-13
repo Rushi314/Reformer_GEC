@@ -4,6 +4,7 @@ from torch import nn
 import torch.nn.functional as F
 from itertools import zip_longest
 import math
+import numpy as np
 
 from code.models.reformer import pretrained_reformer
 
@@ -50,23 +51,54 @@ class InsertionReformer(pl.LightningModule):
     # Tells PyTorch Lightning how to do inference
     def forward(self, x):
         insertion_log_probs = self.shared_forward(x)
-        encoded_insertions = torch.argmax(insertion_log_probs, dim=2)
-
         input_ids, attention_masks = x
 
         strings = []
         string_lengths = torch.sum(attention_masks, dim=1) - 2
-        for encoded_string, string_insertions, length in zip(input_ids, encoded_insertions, string_lengths):
-            string = []
-            for encoded_char, insertion in zip_longest(encoded_string[1:length + 1], string_insertions[:length + 1]):
-                if insertion != 256:
-                    # Map class directly back to character via chr()
-                    string.append(chr(insertion))
-                if encoded_char:
-                    # For some reason, the reformer was trained to offset id of each character by 2
-                    string.append(chr(encoded_char - 2))
 
-            strings.append("".join(string))
+        if hasattr(self, 'variant') and self.variant:
+
+            for log_probs, encoded_string, length in zip(insertion_log_probs, input_ids, string_lengths):
+                # Find character to insert with highest probability
+                log_probs = log_probs[:length+1]
+                _, i = torch.topk(log_probs.flatten(), torch.numel(log_probs))
+                indices = np.array(np.unravel_index(i.numpy(), log_probs.shape)).T
+
+                ended_positions = set()
+                insertion = None
+                for pos, char in indices:
+                    if char == 256:
+                        ended_positions.add(pos)
+                        if len(ended_positions) == length + 1:
+                            break
+                    elif pos not in ended_positions:
+                        insertion = (pos, char)
+                        break
+
+                # Build output string using insertion
+                if insertion:
+                    string = [chr(encoded_char - 2) for encoded_char in encoded_string[1:insertion[0] + 1]]
+                    string.append(chr(insertion[1]))
+                    string.extend([chr(encoded_char - 2) for encoded_char in encoded_string[insertion[0] + 1:length + 1]])
+                else:
+                    string = [chr(encoded_char - 2) for encoded_char in encoded_string[1:length + 1]]
+                
+                strings.append("".join(string))
+
+        else:
+            encoded_insertions = torch.argmax(insertion_log_probs, dim=2)
+            for encoded_string, string_insertions, length in zip(input_ids, encoded_insertions, string_lengths):
+                string = []
+                for encoded_char, insertion in zip_longest(encoded_string[1:length + 1], string_insertions[:length + 1]):
+                    if insertion != 256:
+                        # Map class directly back to character via chr()
+                        string.append(chr(insertion))
+                    if encoded_char:
+                        # For some reason, the reformer was trained to offset id of each character by 2
+                        string.append(chr(encoded_char - 2))
+
+                strings.append("".join(string))
+        
         return strings
 
     # Tells PyTorch Lightning how to do a training step
@@ -153,3 +185,15 @@ class InsertionReformer(pl.LightningModule):
         for encoded_string, length in zip(input_ids, string_lengths):
             strings.append("".join([chr(x - 2) if x > 1 and x < 258 else "" for x in encoded_string]))
         return strings
+
+
+if __name__ == '__main__':
+    model = InsertionReformer.load_from_checkpoint('epoch=14-val_loss=4.616.ckpt')
+
+    sentences = ['i am go walk.']
+
+    model.variant = True
+
+    x = InsertionReformer.encode(sentences)
+    output = model.forward(x)
+    print(output)
