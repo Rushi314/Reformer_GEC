@@ -25,4 +25,8 @@ python utils/process_FCE_data.py <OUTPUT_PATH> --truth <GRAMMATICAL_TEXT_PATH> -
 ```
 
 ## Model
+We propose a text-editing approach for GEC with two important differences from existing text-edit approaches: 
+1. text-edits at the character level, and 
+2. the division of GEC into two independent sub-tasks - deletion and insertion
 <img src="https://raw.githubusercontent.com/shubham-shetty/Reformer_GEC/main/docs/GEC_Architecture.png" alt="GEC_arch" width="750"/>
+Since we treat the character deletion and character insertion subtasks as two independent problems, we implement and train two different models. Both the deletion and insertion models extend the Reformer, an efficient, character-level transformer.
