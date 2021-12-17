@@ -23,3 +23,6 @@ Generate labelled data from FCE data by running following code:
 ```.bash
 python utils/process_FCE_data.py <OUTPUT_PATH> --truth <GRAMMATICAL_TEXT_PATH> --actual <ORIGINAL_TEXT_PATH>
 ```
+
+## Model
+![alt text](https://github.com/shubham-shetty/Reformer-GEC/blob/main/GEC_Architecture.png?raw=true)
