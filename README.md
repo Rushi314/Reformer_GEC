@@ -14,7 +14,7 @@ This repository contains code to recreate models generated for our project. This
 Download datasets from following locations:  
 1. [CLC FCE Dataset](https://ilexir.co.uk/datasets/index.html)
 
-Prepare dataset once downloaded using following code:  
+Prepare the FCE dataset once downloaded using following code:  
 ```.bash
 python utils/prepare_clc_fce_data.py <INPUT> --output <OUTPUT_FILE> 
 ```
