@@ -8,7 +8,7 @@ Over the past decade, neural machine translation-based approaches to GEC, which 
 
 In our work, we model GEC as a two-step problem that involves edits on the character level. The first subtask is deletion, where we fine tune a Reformer, an efficient character-level transformer, to predict whether or not to delete each character. The second step is insertion, where we predict which characters to insert between existing characters to produce a grammatical sentence. These operations can be trained independently, using the longest common subsequence between the ungrammatical and grammatical sentence as an intermediary label. 
 
-This repository contains code to recreate models generated for our project. This project was developed as part of coursework for COMPSCI-685: Advanced Natural Language Processing at UMass Amherst, Fall '22.
+This repository contains code to recreate models generated for our project. This project was developed as part of coursework for COMPSCI-685: Advanced Natural Language Processing at UMass Amherst, Fall '21.
 
 ## Dataset
 Download datasets from following locations:  
