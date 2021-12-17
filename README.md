@@ -43,3 +43,13 @@ Model can be tested by running the script:
 ```.bash
 python code.test
 ```
+
+For the purpose of this project, we divided the FCE dataset into training and validation sets using a 9:1 split: 30,935 training examples and 3,555 validation examples. We trained the deletion and insertion models completely independently on the FCE training set using only Google Colab. We leveraged PyTorch Lightning, a wrapper around PyTorch, to help structure our project and simplify our training code. We evaluated each model on the validation set every half epoch, and stored checkpoints of the models with the lowest validation loss in Google Drive. We stopped training when no improvements in validation loss were made for five consecutive validation checks.
+
+The best deletion model was trained for eight epochs with a learning rate of 1e-4. The best insertion model was trained for nineteen epochs with a learning rate of 1e-3. Both models were trained with a batch size of 32 using the Adam optimizer. The model for deletion model can be found [here](https://drive.google.com/file/d/1-HwUcgF60LshdgbvG4OBSklrbhkHLuk2/view?usp=sharing), while model for insertion model can be found [here](https://drive.google.com/file/d/1-R2bgC7z2-IPWuCKvz_WNt4DQ7YlSuFJ/view?usp=sharing).
+
+## Team Members
+1. Adam Viola (aviola@umass.edu)
+2. Rushikesh Dudhat (rdudhat@umass.edu)
+3. Shubham Shetty (shubhamshett@umass.edu)
+4. Pranjali Parse (pparse@umass.edu)
