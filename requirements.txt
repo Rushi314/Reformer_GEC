@@ -1,3 +1,5 @@
 pytorch-lightning
 transformers
 test-tube
+nltk
+difflib
