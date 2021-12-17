@@ -18,3 +18,8 @@ Prepare dataset once downloaded using following code:
 ```.bash
 python utils/prepare_clc_fce_data.py <INPUT> --output <OUTPUT_FILE> 
 ```
+
+Generate labelled data from FCE data by running following code:
+```.bash
+python utils/process_FCE_data.py <OUTPUT_PATH> --truth <GRAMMATICAL_TEXT_PATH> --actual <ORIGINAL_TEXT_PATH>
+```
