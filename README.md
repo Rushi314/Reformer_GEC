@@ -25,4 +25,4 @@ python utils/process_FCE_data.py <OUTPUT_PATH> --truth <GRAMMATICAL_TEXT_PATH> -
 ```
 
 ## Model
-![alt text](https://raw.githubusercontent.com/shubham-shetty/Reformer_GEC/main/docs/GEC_Architecture.png)
+![GEC_Architecture](https://raw.githubusercontent.com/shubham-shetty/Reformer_GEC/main/docs/GEC_Architecture.png =250x)
