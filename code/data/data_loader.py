@@ -1,5 +1,6 @@
 # Author: Pranjali Parse
 # Description: Function to load labelled data 
+# TODO: Parameterize drive location
 
 import pandas as pd
 
